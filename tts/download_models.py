@@ -7,7 +7,7 @@ def download_tts_models():
     Downloads the Kokoro ONNX model and voice palette from Hugging Face
     if they are not already present in the engines/ directory.
     """
-    repo_id = "onnx-community/Kokoro-82M-v1.0-ONNX"
+    repo_id = "fastrtc/kokoro-onnx"
     
     # Target directory is tts/engines/
     target_dir = Path(__file__).parent / "engines"
