@@ -38,9 +38,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools && \
 COPY engines/         engines/
 COPY services/        services/
 COPY workers/         workers/
-COPY models/          models/
 COPY utils/           utils/
-COPY scripts/         scripts/
 COPY main_prod.py     .
 COPY run_prod.py      .
 
