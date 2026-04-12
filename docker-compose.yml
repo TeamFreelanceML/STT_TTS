@@ -15,6 +15,12 @@ services:
       API_PORT: 8000
     networks:
       - readaloud-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
 
   # --- TTS Redis (Cache & Task Broker) ---
   redis:
@@ -72,9 +78,15 @@ services:
     ports:
       - "8002:3000"
     depends_on:
-      - tts-api
+      tts-api:
+        condition: service_healthy
     networks:
       - readaloud-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # --- Main Frontend (Guided Reading) ---
   frontend:
@@ -84,8 +96,10 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - backend
-      - tts-api
+      backend:
+        condition: service_healthy
+      tts-api:
+        condition: service_healthy
     networks:
       - readaloud-net
 
