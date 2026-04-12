@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# Python
+backend/.venv/
+backend/__pycache__/
+*.py[cod]
+.Python
+*.egg-info/
+.eggs/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Large Data & Cache
+audio_cache/
+backend/audio_cache/
+tts/audio_cache/
+backend/temp/
+results/
+
+# Models & Large Binaries
+# (Docker handles these downloads)
+*.wasm
+*.data
+*.onnx
+*.bin
+*.pt
+*.pth
+models/
+Downloads/

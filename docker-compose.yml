@@ -1,0 +1,98 @@
+version: "3.9"
+
+services:
+  # --- STT Backend (DeepReport Evaluation) ---
+  backend:
+    build:
+      context: ./backend
+    container_name: readaloud-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      STT_MODEL_NAME: ${STT_MODEL_NAME:-base}
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+    networks:
+      - readaloud-net
+
+  # --- TTS Redis (Cache & Task Broker) ---
+  redis:
+    image: redis:7-alpine
+    container_name: readaloud-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - readaloud-net
+
+  # --- TTS API (Kokoro Generation) ---
+  tts-api:
+    build:
+      context: ./tts
+      dockerfile: Dockerfile
+    container_name: readaloud-tts-api
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - PORT=8001
+      - TTS_API_KEY=${TTS_API_KEY:-}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+    volumes:
+      - audio_cache:/app/audio_cache
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - readaloud-net
+
+  # --- TTS Admin Panel (Dashboard) ---
+  tts-admin:
+    build:
+      context: ./tts/admin-panel
+      dockerfile: Dockerfile
+    container_name: readaloud-tts-admin
+    restart: unless-stopped
+    ports:
+      - "8002:3000"
+    depends_on:
+      - tts-api
+    networks:
+      - readaloud-net
+
+  # --- Main Frontend (Guided Reading) ---
+  frontend:
+    build:
+      context: ./frontend
+    container_name: readaloud-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+      - tts-api
+    networks:
+      - readaloud-net
+
+networks:
+  readaloud-net:
+    driver: bridge
+
+volumes:
+  redis_data:
+  audio_cache:

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Virtual Environments
+.env
+venv/
+env/
+.venv/
+
+# Large Model Weights
+*.pth
+*.pt
+*.onnx
+*.bin
+
+# Caches and Generated Audio
+audio_cache/
+*.wav
+*.mp3
+
+# Next.js
+.next/
+out/
+build/
+
+# Misc
+.DS_Store

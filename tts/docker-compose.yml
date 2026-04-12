@@ -1,0 +1,77 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.yml — Story Narration TTS API
+#
+# Services:
+#   redis   — Celery broker + job metadata store
+#   api     — FastAPI + Celery workers (run_prod.py starts both)
+#
+# Usage:
+#   docker compose up --build          # first time
+#   docker compose up -d               # background
+#   docker compose logs -f api         # follow logs
+#   docker compose down                # stop all
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: readaloud-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── API + Workers ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: readaloud-api
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - PORT=8001
+      - TTS_API_KEY=${TTS_API_KEY:-}          # Set in .env file — empty = dev mode (no auth)
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*} # Comma-separated origins e.g. https://app.com
+    volumes:
+      # Audio cache — persist WAV files across restarts
+      - audio_cache:/app/audio_cache
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s    # ARM needs extra time to load Kokoro models
+      retries: 3
+
+  # ── Admin Panel (Frontend) ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./admin-panel
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8001}
+    container_name: readaloud-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  redis_data:
+  audio_cache:

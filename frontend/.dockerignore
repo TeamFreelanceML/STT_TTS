@@ -1,0 +1,5 @@
+node_modules/
+.next/
+npm-debug.log
+tsc_output.txt
+tsc_output_utf8.txt
